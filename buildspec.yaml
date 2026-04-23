@@ -1,0 +1,25 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      # Log in to Amazon ECR
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+  build:
+    commands:
+      # Build the Docker image
+      - echo Building the Docker image...
+      - docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./analytics
+
+      # Tag with build number for versioning
+      - docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$CODEBUILD_BUILD_NUMBER
+
+  post_build:
+    commands:
+      # Push both tags to ECR
+      - echo Pushing the Docker image...
+      - docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      - docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CODEBUILD_BUILD_NUMBER
+      - echo Build completed successfully
